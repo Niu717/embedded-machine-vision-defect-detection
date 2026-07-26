@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OpenCV capture data: keep sample folders locally, do not upload raw images/videos.
+samples/captured/
+samples/raw/
+*.avi
+*.mp4
+
+# IDE and operating system files
+.vscode/
+.idea/
+*.uvprojx
+*.uvoptx
+*.uvgui.*
+Thumbs.db
+desktop.ini
+
+# Local device settings
+pc_app/local_config.py
+*.log
