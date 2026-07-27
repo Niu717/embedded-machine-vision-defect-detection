@@ -14,7 +14,7 @@ class DetectorConfig:
 
 @dataclass
 class AppConfig:
-    camera_index: int = 0
+    camera_index: int = 1
     width: int = 1920
     height: int = 1080
     serial_port: str = ""

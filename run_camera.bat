@@ -6,5 +6,5 @@ if not exist "%PYTHON_EXE%" (
   exit /b 1
 )
 cd /d "%~dp0pc_app"
-"%PYTHON_EXE%" main.py --camera 0
+"%PYTHON_EXE%" main.py --camera 1
 pause

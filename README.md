@@ -18,11 +18,11 @@
 
 ## 运行上位机
 
-摄像头接入笔记本后，双击 `run_camera.bat`。首次默认使用编号为 0 的摄像头。
-如没有画面，用命令提示符在 `pc_app` 目录运行：
+摄像头接入笔记本后，双击 `run_camera.bat`。当前电脑默认使用编号为 1 的
+`ML Camera` 外接工业摄像头。如没有画面，用命令提示符在 `pc_app` 目录切换编号：
 
 ```bat
-C:\Users\nzr\AppData\Local\Programs\Python\Python313\python.exe main.py --camera 1
+C:\Users\nzr\AppData\Local\Programs\Python\Python313\python.exe main.py --camera 0
 ```
 
 按键：`空格` 开始/停止检测，`S` 保存当前画面，`Q` 退出。
