@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import os
 from datetime import datetime
 from pathlib import Path
+
+os.environ.setdefault("OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS", "0")
 
 import cv2
 
@@ -23,7 +26,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def open_camera(config: AppConfig) -> cv2.VideoCapture:
-    camera = cv2.VideoCapture(config.camera_index, cv2.CAP_DSHOW)
+    camera = cv2.VideoCapture(config.camera_index, cv2.CAP_MSMF)
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, config.width)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, config.height)
     camera.set(cv2.CAP_PROP_FPS, 30)
