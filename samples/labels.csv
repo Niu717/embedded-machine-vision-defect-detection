@@ -1,0 +1,18 @@
+filename,is_normal,edge_defect,black_spot,deformation,scratch,notes
+sample_20260730_171415.jpg,0,0,0,0,1,scratch
+sample_20260730_171429.jpg,0,0,0,1,0,deformation
+sample_20260730_171449.jpg,0,0,0,0,1,scratch
+sample_20260730_171455.jpg,0,0,0,1,1,deformation+scratch
+sample_20260730_171500.jpg,0,0,0,1,0,deformation
+sample_20260730_171505.jpg,0,0,0,1,0,deformation
+sample_20260730_171526.jpg,0,1,0,0,0,edge defect
+sample_20260730_171550.jpg,0,1,1,0,0,edge defect+black spot
+sample_20260730_171555.jpg,0,1,0,0,0,edge defect
+sample_20260730_171608.jpg,1,0,0,0,0,normal
+sample_20260730_171613.jpg,1,0,0,0,0,normal
+sample_20260730_171617.jpg,1,0,0,0,0,normal
+sample_20260730_171622.jpg,1,0,0,0,0,normal
+sample_20260730_171626.jpg,0,1,0,0,0,edge defect
+sample_20260730_171630.jpg,1,0,0,0,0,normal
+sample_20260730_171635.jpg,0,1,0,0,0,edge defect
+sample_20260730_171641.jpg,1,0,0,0,0,normal
