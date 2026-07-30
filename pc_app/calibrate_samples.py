@@ -133,12 +133,32 @@ def measure(image: np.ndarray) -> dict[str, float] | None:
         default=0.0,
     )
 
+    edges = cv2.Canny(gray, 70, 150)
+    edges = cv2.bitwise_and(edges, inner)
+    lines = cv2.HoughLinesP(
+        edges,
+        1,
+        np.pi / 180,
+        threshold=28,
+        minLineLength=max(35, int(radius * 0.28)),
+        maxLineGap=10,
+    )
+    scratch_length = 0.0
+    if lines is not None:
+        scratch_length = float(
+            sum(
+                math.hypot(x2 - x1, y2 - y1)
+                for x1, y1, x2, y2 in lines.reshape(-1, 4)
+            )
+        )
+
     return {
         "radius": float(radius),
         "circularity": circularity,
         "radial_cv": radial_cv,
         "radial_peak": radial_peak,
         "largest_dark": largest_dark,
+        "scratch_length": scratch_length,
     }
 
 
@@ -146,7 +166,10 @@ def main() -> None:
     with LABELS_FILE.open(encoding="utf-8", newline="") as stream:
         rows = list(csv.DictReader(stream))
 
-    print("time   label                  radius circularity radial_cv radial_peak dark_area")
+    print(
+        "time   label                  radius circularity radial_cv "
+        "radial_peak dark_area scratch_len"
+    )
     for row in rows:
         image = cv2.imread(str(CAPTURE_DIR / row["filename"]))
         features = measure(image)
@@ -159,7 +182,7 @@ def main() -> None:
             f"{time_text} {label:<22} "
             f"{features['radius']:6.1f} {features['circularity']:11.4f} "
             f"{features['radial_cv']:9.4f} {features['radial_peak']:11.4f} "
-            f"{features['largest_dark']:9.1f}"
+            f"{features['largest_dark']:9.1f} {features['scratch_length']:11.1f}"
         )
 
 
