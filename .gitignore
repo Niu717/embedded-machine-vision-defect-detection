@@ -16,6 +16,21 @@ samples/raw/
 *.uvprojx
 *.uvoptx
 *.uvgui.*
+!stm32/defect_sorter.uvprojx
+stm32/DebugConfig/
+stm32/Objects/
+stm32/Listings/
+stm32/*.axf
+stm32/*.build_log.htm
+stm32/*.htm
+stm32/*.lnp
+stm32/*.map
+stm32/*.sct
+stm32/*_Target*.dep
+stm32/*.crf
+stm32/*.d
+stm32/*.o
+stm32/*.lst
 Thumbs.db
 desktop.ini
 
