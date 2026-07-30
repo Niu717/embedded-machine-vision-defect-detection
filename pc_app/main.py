@@ -10,7 +10,7 @@ os.environ.setdefault("OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS", "0")
 import cv2
 
 from config import AppConfig
-from defect_detector import CapDefectDetector
+from cap_detector_v2 import CapDefectDetector
 from serial_controller import SerialController
 
 
