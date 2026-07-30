@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+from collections import Counter, deque
 from datetime import datetime
 from pathlib import Path
 
@@ -47,6 +48,17 @@ def draw_overlay(frame, result, serial_connected: bool) -> None:
     cv2.putText(frame, "[Space] detect  [S] save  [Q] quit", (30, frame.shape[0] - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
 
 
+def stable_result_from(history):
+    """Return a result only after at least 2/3 of recent frames agree."""
+    if len(history) < 8:
+        return None
+    message, votes = Counter(item.message for item in history).most_common(1)[0]
+    required_votes = max(6, (len(history) * 2 + 2) // 3)
+    if votes < required_votes:
+        return None
+    return next(item for item in reversed(history) if item.message == message)
+
+
 def main() -> None:
     args = parse_args()
     config = AppConfig(camera_index=args.camera, serial_port=args.port)
@@ -55,6 +67,9 @@ def main() -> None:
     camera = open_camera(config)
     CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
     auto_detect = False
+    result_history = deque(maxlen=12)
+    stable_result = None
+    last_sent_message = None
 
     print("窗口已打开：空格执行检测，S 保存图片，Q 退出。")
     try:
@@ -63,9 +78,32 @@ def main() -> None:
             if not ok:
                 raise RuntimeError("摄像头读取失败。")
             display = frame.copy()
-            result = detector.detect(frame) if auto_detect else None
-            if result:
-                draw_overlay(display, result, serial.connected)
+            if auto_detect:
+                raw_result = detector.detect(frame)
+                result_history.append(raw_result)
+                candidate = stable_result_from(result_history)
+                if candidate is not None:
+                    stable_result = candidate
+                    if (
+                        stable_result.message != last_sent_message
+                        and stable_result.message != "NO CAP"
+                    ):
+                        serial.send_result(stable_result.passed)
+                        last_sent_message = stable_result.message
+
+            if auto_detect and stable_result is not None:
+                draw_overlay(display, stable_result, serial.connected)
+                cv2.putText(
+                    display,
+                    f"Stable vote: {len(result_history)}/12",
+                    (30, 130),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    (255, 255, 0),
+                    2,
+                )
+            elif auto_detect:
+                cv2.putText(display, "STABILIZING...", (30, 55), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 215, 255), 3)
             else:
                 cv2.putText(display, "Press Space to detect", (30, 55), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 0), 2)
 
@@ -75,9 +113,9 @@ def main() -> None:
                 break
             if key == ord(" "):
                 auto_detect = not auto_detect
-                if auto_detect:
-                    result = detector.detect(frame)
-                    serial.send_result(result.passed)
+                result_history.clear()
+                stable_result = None
+                last_sent_message = None
             if key == ord("s"):
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 target = CAPTURE_DIR / f"sample_{timestamp}.jpg"

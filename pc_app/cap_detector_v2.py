@@ -23,10 +23,9 @@ class CapDefectDetector:
 
     EDGE_RADIAL_CV_LIMIT = 0.016
     EDGE_CIRCULARITY_LIMIT = 0.75
-    EDGE_CIRCULARITY_HIGH_LIMIT = 0.85
     DEFORMATION_RADIAL_PEAK_LIMIT = 0.08
     DARK_SPOT_AREA_LIMIT = 300.0
-    SCRATCH_LENGTH_LIMIT = 500.0
+    SCRATCH_LENGTH_LIMIT = 250.0
 
     def __init__(self, config: DetectorConfig | None = None) -> None:
         self.config = config or DetectorConfig()
@@ -49,10 +48,6 @@ class CapDefectDetector:
         scratch = scratch_length >= self.SCRATCH_LENGTH_LIMIT
         edge_defect = not deformation and (
             circularity < self.EDGE_CIRCULARITY_LIMIT
-            or (
-                circularity > self.EDGE_CIRCULARITY_HIGH_LIMIT
-                and not scratch
-            )
             or radial_cv > self.EDGE_RADIAL_CV_LIMIT
         )
         dark_mask, dark_area = self._find_dark_spot(gray, centre, radius)
