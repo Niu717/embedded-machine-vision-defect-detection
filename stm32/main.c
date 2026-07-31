@@ -10,6 +10,7 @@
 
 /* Active buzzer module: PA0 is used as the low-level trigger output. */
 #define BUZZER_PIN     0U
+#define SERVO_PIN      1U
 
 static void delay_ms(uint32_t ms)
 {
@@ -56,6 +57,50 @@ static void buzzer_beep(uint32_t duration_ms)
     buzzer_on();
     delay_ms(duration_ms);
     buzzer_off();
+}
+
+static void servo_init(void)
+{
+    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+    RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
+
+    /* PA1 is TIM2_CH2: alternate-function push-pull, 50 Hz servo PWM. */
+    GPIOA->CRL &= ~(0xFU << (SERVO_PIN * 4U));
+    GPIOA->CRL |=  (0xAU << (SERVO_PIN * 4U));
+
+    TIM2->PSC = 7U;                 /* 8 MHz / (7 + 1) = 1 MHz: 1 tick = 1 us */
+    TIM2->ARR = 19999U;             /* 20 ms period = 50 Hz */
+    TIM2->CCR2 = 1500U;             /* centre position, 1.5 ms high pulse */
+    TIM2->CCMR1 &= ~TIM_CCMR1_CC2S;
+    TIM2->CCMR1 |= TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2PE;
+    TIM2->CCER |= TIM_CCER_CC2E;
+    TIM2->CR1 |= TIM_CR1_ARPE;
+    TIM2->EGR = TIM_EGR_UG;
+    TIM2->CR1 |= TIM_CR1_CEN;
+}
+
+static void servo_set_pulse_us(uint16_t pulse_us)
+{
+    if (pulse_us < 1000U)
+    {
+        pulse_us = 1000U;
+    }
+    else if (pulse_us > 2000U)
+    {
+        pulse_us = 2000U;
+    }
+    TIM2->CCR2 = pulse_us;
+}
+
+static void servo_self_test(void)
+{
+    servo_set_pulse_us(1500U);      /* centre */
+    delay_ms(700U);
+    servo_set_pulse_us(1200U);      /* left */
+    delay_ms(600U);
+    servo_set_pulse_us(1800U);      /* right */
+    delay_ms(600U);
+    servo_set_pulse_us(1500U);      /* return to centre */
 }
 
 static void i2c_delay(void)
@@ -245,6 +290,7 @@ int main(void)
 {
     led_init();
     buzzer_init();
+    servo_init();
     oled_init();
 
     oled_show_text(1U, 14U, "DEFECT DETECTOR");
@@ -255,6 +301,7 @@ int main(void)
     buzzer_beep(120U);
     delay_ms(100U);
     buzzer_beep(120U);
+    servo_self_test();
 
     while (1)
     {
