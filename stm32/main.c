@@ -12,6 +12,11 @@
 #define BUZZER_PIN     0U
 #define SERVO_PIN      1U
 
+static char uart_command[8];
+static uint8_t uart_command_length;
+
+static void oled_show_text(uint8_t page, uint8_t column, const char *text);
+
 static void delay_ms(uint32_t ms)
 {
     volatile uint32_t count;
@@ -103,6 +108,17 @@ static void servo_self_test(void)
     servo_set_pulse_us(1800U);      /* right */
     delay_ms(600U);
     servo_set_pulse_us(1500U);      /* return to centre */
+}
+
+static void uart_init(void)
+{
+    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_USART1EN;
+
+    /* PA9 = USART1 TX, PA10 = USART1 RX. */
+    GPIOA->CRH &= ~((0xFU << 4) | (0xFU << 8));
+    GPIOA->CRH |=  ((0xAU << 4) | (0x4U << 8));
+    USART1->BRR = (SystemCoreClock + 57600U) / 115200U;
+    USART1->CR1 = USART_CR1_UE | USART_CR1_RE | USART_CR1_TE;
 }
 
 static void i2c_delay(void)
@@ -240,8 +256,11 @@ static const uint8_t *glyph_rows(char character)
     static const uint8_t d[7] = {30, 17, 17, 17, 17, 17, 30};
     static const uint8_t e[7] = {31, 16, 16, 30, 16, 16, 31};
     static const uint8_t f[7] = {31, 16, 16, 30, 16, 16, 16};
+    static const uint8_t g[7] = {14, 17, 16, 23, 17, 17, 14};
+    static const uint8_t k[7] = {17, 18, 20, 24, 20, 18, 17};
     static const uint8_t l[7] = {16, 16, 16, 16, 16, 16, 31};
     static const uint8_t m[7] = {17, 27, 21, 21, 17, 17, 17};
+    static const uint8_t n[7] = {17, 25, 21, 19, 17, 17, 17};
     static const uint8_t o[7] = {14, 17, 17, 17, 17, 17, 14};
     static const uint8_t p[7] = {30, 17, 17, 30, 16, 16, 16};
     static const uint8_t r[7] = {30, 17, 17, 30, 20, 18, 17};
@@ -253,11 +272,71 @@ static const uint8_t *glyph_rows(char character)
     switch (character)
     {
         case 'A': return a; case 'C': return c; case 'D': return d;
-        case 'E': return e; case 'F': return f; case 'L': return l;
+        case 'E': return e; case 'F': return f; case 'G': return g;
+        case 'K': return k; case 'L': return l;
         case 'M': return m; case 'O': return o; case 'P': return p;
-        case 'R': return r; case 'S': return s; case 'T': return t;
+        case 'N': return n; case 'R': return r; case 'S': return s;
+        case 'T': return t;
         case 'U': return u; case 'Y': return y;
         default:  return blank;
+    }
+}
+
+static void show_result_ok(void)
+{
+    oled_clear();
+    oled_show_text(1U, 14U, "DEFECT DETECTOR");
+    oled_show_text(4U, 38U, "RESULT OK");
+    servo_set_pulse_us(1500U);      /* Pass: gate remains in the centre. */
+    buzzer_off();
+}
+
+static void show_result_ng(void)
+{
+    oled_clear();
+    oled_show_text(1U, 14U, "DEFECT DETECTOR");
+    oled_show_text(4U, 38U, "RESULT NG");
+    servo_set_pulse_us(1800U);      /* Fail: move the reject gate. */
+    buzzer_beep(250U);
+    delay_ms(100U);
+    buzzer_beep(250U);
+}
+
+static void uart_poll(void)
+{
+    char received;
+    if ((USART1->SR & USART_SR_RXNE) == 0U)
+    {
+        return;
+    }
+
+    received = (char)USART1->DR;
+    if (received == '\r')
+    {
+        return;
+    }
+    if (received == '\n')
+    {
+        uart_command[uart_command_length] = '\0';
+        if ((uart_command_length == 2U) && (uart_command[0] == 'O') && (uart_command[1] == 'K'))
+        {
+            show_result_ok();
+        }
+        else if ((uart_command_length == 2U) && (uart_command[0] == 'N') && (uart_command[1] == 'G'))
+        {
+            show_result_ng();
+        }
+        uart_command_length = 0U;
+        return;
+    }
+
+    if (uart_command_length < (sizeof(uart_command) - 1U))
+    {
+        uart_command[uart_command_length++] = received;
+    }
+    else
+    {
+        uart_command_length = 0U;
     }
 }
 
@@ -293,6 +372,7 @@ int main(void)
     led_init();
     buzzer_init();
     servo_init();
+    uart_init();
     oled_init();
 
     oled_show_text(1U, 14U, "DEFECT DETECTOR");
@@ -307,6 +387,6 @@ int main(void)
 
     while (1)
     {
-        /* The next step will replace this idle state with PC serial commands. */
+        uart_poll();
     }
 }
