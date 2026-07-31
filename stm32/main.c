@@ -68,7 +68,9 @@ static void servo_init(void)
     GPIOA->CRL &= ~(0xFU << (SERVO_PIN * 4U));
     GPIOA->CRL |=  (0xAU << (SERVO_PIN * 4U));
 
-    TIM2->PSC = 7U;                 /* 8 MHz / (7 + 1) = 1 MHz: 1 tick = 1 us */
+    /* TIM2 clock follows the STM32 system clock in this project (normally 72 MHz).
+       Derive a 1 MHz timer instead of assuming the reset-time 8 MHz clock. */
+    TIM2->PSC = (SystemCoreClock / 1000000U) - 1U;  /* 1 tick = 1 us */
     TIM2->ARR = 19999U;             /* 20 ms period = 50 Hz */
     TIM2->CCR2 = 1500U;             /* centre position, 1.5 ms high pulse */
     TIM2->CCMR1 &= ~TIM_CCMR1_CC2S;
