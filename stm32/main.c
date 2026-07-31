@@ -12,6 +12,9 @@
 #define BUZZER_PIN     0U
 #define SERVO_PIN      1U
 
+/* Set to 1 only after the standalone hardware self-test is confirmed again. */
+#define UART_LINK_ENABLED  0
+
 static char uart_command[8];
 static uint8_t uart_command_length;
 
@@ -372,7 +375,9 @@ int main(void)
     led_init();
     buzzer_init();
     servo_init();
+#if UART_LINK_ENABLED
     uart_init();
+#endif
     oled_init();
 
     oled_show_text(1U, 14U, "DEFECT DETECTOR");
@@ -387,6 +392,8 @@ int main(void)
 
     while (1)
     {
+#if UART_LINK_ENABLED
         uart_poll();
+#endif
     }
 }
