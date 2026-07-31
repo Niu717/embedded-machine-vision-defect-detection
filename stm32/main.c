@@ -12,8 +12,8 @@
 #define BUZZER_PIN     0U
 #define SERVO_PIN      1U
 
-/* Set to 1 only after the standalone hardware self-test is confirmed again. */
-#define UART_LINK_ENABLED  0
+/* UART result link to the PC inspection application. */
+#define UART_LINK_ENABLED  1
 
 static char uart_command[8];
 static uint8_t uart_command_length;
