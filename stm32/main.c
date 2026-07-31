@@ -8,6 +8,9 @@
 
 #define OLED_ADDRESS  0x78U
 
+/* Active buzzer module: PA0 is used as the low-level trigger output. */
+#define BUZZER_PIN     0U
+
 static void delay_ms(uint32_t ms)
 {
     volatile uint32_t count;
@@ -26,6 +29,33 @@ static void led_init(void)
     GPIOC->CRH &= ~(GPIO_CRH_MODE13 | GPIO_CRH_CNF13);
     GPIOC->CRH |= GPIO_CRH_MODE13_1;
     GPIOC->BSRR = GPIO_BSRR_BS13;     /* PC13 onboard LED is active-low. */
+}
+
+static void buzzer_init(void)
+{
+    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+
+    /* PA0: 2 MHz push-pull output. Keep it high because this module is low-level triggered. */
+    GPIOA->CRL &= ~(0xFU << (BUZZER_PIN * 4U));
+    GPIOA->CRL |=  (0x2U << (BUZZER_PIN * 4U));
+    GPIOA->BSRR = (uint32_t)(1U << BUZZER_PIN);
+}
+
+static void buzzer_on(void)
+{
+    GPIOA->BRR = (uint32_t)(1U << BUZZER_PIN);
+}
+
+static void buzzer_off(void)
+{
+    GPIOA->BSRR = (uint32_t)(1U << BUZZER_PIN);
+}
+
+static void buzzer_beep(uint32_t duration_ms)
+{
+    buzzer_on();
+    delay_ms(duration_ms);
+    buzzer_off();
 }
 
 static void i2c_delay(void)
@@ -214,11 +244,17 @@ static void oled_show_text(uint8_t page, uint8_t column, const char *text)
 int main(void)
 {
     led_init();
+    buzzer_init();
     oled_init();
 
     oled_show_text(1U, 14U, "DEFECT DETECTOR");
     oled_show_text(3U, 26U, "SYSTEM READY");
     oled_show_text(5U, 22U, "OLED TEST PASS");
+
+    /* Audible proof that the active buzzer wiring and output pin are correct. */
+    buzzer_beep(120U);
+    delay_ms(100U);
+    buzzer_beep(120U);
 
     while (1)
     {
