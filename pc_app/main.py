@@ -45,7 +45,7 @@ def draw_overlay(frame, result, serial_connected: bool) -> None:
     cv2.putText(frame, result.message, (30, 55), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 3)
     state = "STM32: connected" if serial_connected else "STM32: offline"
     cv2.putText(frame, state, (30, 95), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 0), 2)
-    cv2.putText(frame, "[Space] detect  [S] save  [Q] quit", (30, frame.shape[0] - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
+    cv2.putText(frame, "[Space] detect  [R] rearm  [S] save  [Q] quit", (30, frame.shape[0] - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
 
 
 def stable_result_from(history):
@@ -69,7 +69,9 @@ def main() -> None:
     auto_detect = False
     result_history = deque(maxlen=12)
     stable_result = None
-    last_sent_message = None
+    # One command is sent per workpiece.  A stable NO CAP result rearms the
+    # system, so two consecutive defective caps both generate an alarm.
+    inspection_armed = True
 
     print("窗口已打开：空格执行检测，S 保存图片，Q 退出。")
     try:
@@ -84,12 +86,11 @@ def main() -> None:
                 candidate = stable_result_from(result_history)
                 if candidate is not None:
                     stable_result = candidate
-                    if (
-                        stable_result.message != last_sent_message
-                        and stable_result.message != "NO CAP"
-                    ):
+                    if stable_result.message == "NO CAP":
+                        inspection_armed = True
+                    elif inspection_armed:
                         serial.send_result(stable_result.passed)
-                        last_sent_message = stable_result.message
+                        inspection_armed = False
 
             if auto_detect and stable_result is not None:
                 draw_overlay(display, stable_result, serial.connected)
@@ -102,6 +103,16 @@ def main() -> None:
                     (255, 255, 0),
                     2,
                 )
+                if stable_result.message != "NO CAP" and not inspection_armed:
+                    cv2.putText(
+                        display,
+                        "Result sent: remove cap for next test",
+                        (30, 160),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.55,
+                        (255, 255, 0),
+                        2,
+                    )
             elif auto_detect:
                 cv2.putText(display, "STABILIZING...", (30, 55), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 215, 255), 3)
             else:
@@ -115,7 +126,13 @@ def main() -> None:
                 auto_detect = not auto_detect
                 result_history.clear()
                 stable_result = None
-                last_sent_message = None
+                inspection_armed = True
+            if key == ord("r"):
+                # Manual fallback when two workpieces are changed with no
+                # visible gap between them.
+                result_history.clear()
+                stable_result = None
+                inspection_armed = True
             if key == ord("s"):
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 target = CAPTURE_DIR / f"sample_{timestamp}.jpg"
