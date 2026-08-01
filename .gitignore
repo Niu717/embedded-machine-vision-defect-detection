@@ -16,6 +16,7 @@ samples/raw/
 *.uvprojx
 *.uvoptx
 *.uvgui.*
+*.uvguix.*
 !stm32/defect_sorter.uvprojx
 stm32/DebugConfig/
 stm32/Objects/
@@ -37,3 +38,4 @@ desktop.ini
 # Local device settings
 pc_app/local_config.py
 *.log
+*.inspect.ndjson
