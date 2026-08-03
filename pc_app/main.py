@@ -12,11 +12,13 @@ import cv2
 
 from config import AppConfig
 from cap_detector_v2 import CapDefectDetector
+from result_logger import ResultLogger
 from serial_controller import SerialController
 
 
 ROOT = Path(__file__).resolve().parents[1]
 CAPTURE_DIR = ROOT / "samples" / "captured"
+RESULT_DIR = ROOT / "results"
 
 
 def parse_args() -> argparse.Namespace:
@@ -36,7 +38,7 @@ def open_camera(config: AppConfig) -> cv2.VideoCapture:
     return camera
 
 
-def draw_overlay(frame, result, serial_connected: bool) -> None:
+def draw_overlay(frame, result, serial_connected: bool, statistics: str = "") -> None:
     color = (40, 190, 40) if result.passed else (20, 20, 235)
     if result.object_contour is not None:
         cv2.drawContours(frame, [result.object_contour], -1, color, 2)
@@ -45,6 +47,8 @@ def draw_overlay(frame, result, serial_connected: bool) -> None:
     cv2.putText(frame, result.message, (30, 55), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 3)
     state = "STM32: connected" if serial_connected else "STM32: offline"
     cv2.putText(frame, state, (30, 95), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 0), 2)
+    if statistics:
+        cv2.putText(frame, statistics, (30, 130), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 0), 2)
     cv2.putText(frame, "[Space] detect  [R] rearm  [S] save  [Q] quit", (30, frame.shape[0] - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
 
 
@@ -66,6 +70,7 @@ def main() -> None:
     serial = SerialController(config.serial_port, config.baudrate)
     camera = open_camera(config)
     CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
+    logger = ResultLogger(RESULT_DIR)
     auto_detect = False
     result_history = deque(maxlen=12)
     stable_result = None
@@ -90,14 +95,18 @@ def main() -> None:
                         inspection_armed = True
                     elif inspection_armed:
                         serial.send_result(stable_result.passed)
+                        annotated = frame.copy()
+                        draw_overlay(annotated, stable_result, serial.connected)
+                        saved_path = logger.record(stable_result, annotated, serial.connected)
+                        print(f"Recorded #{logger.total_count}: {stable_result.message} -> {saved_path}")
                         inspection_armed = False
 
             if auto_detect and stable_result is not None:
-                draw_overlay(display, stable_result, serial.connected)
+                draw_overlay(display, stable_result, serial.connected, logger.summary_text())
                 cv2.putText(
                     display,
                     f"Stable vote: {len(result_history)}/12",
-                    (30, 130),
+                    (30, 160),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.6,
                     (255, 255, 0),
@@ -107,7 +116,7 @@ def main() -> None:
                     cv2.putText(
                         display,
                         "Result sent: remove cap for next test",
-                        (30, 160),
+                        (30, 190),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.55,
                         (255, 255, 0),
@@ -115,8 +124,10 @@ def main() -> None:
                     )
             elif auto_detect:
                 cv2.putText(display, "STABILIZING...", (30, 55), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 215, 255), 3)
+                cv2.putText(display, logger.summary_text(), (30, 95), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 0), 2)
             else:
                 cv2.putText(display, "Press Space to detect", (30, 55), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 0), 2)
+                cv2.putText(display, logger.summary_text(), (30, 95), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 0), 2)
 
             cv2.imshow("Workpiece Defect Detection", display)
             key = cv2.waitKey(1) & 0xFF
