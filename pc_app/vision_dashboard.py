@@ -226,7 +226,13 @@ class VisionDashboard:
         self.root.after(30, self._update_frame)
 
     def _render_overlay(self, frame) -> None:
-        self.connection_label.configure(text="STM32 CONNECTED" if self.serial.connected else "STM32 OFFLINE")
+        if self.serial.connected:
+            serial_state = "STM32 CONNECTED"
+        elif self.serial.port:
+            serial_state = f"STM32 OFFLINE ({self.serial.port})"
+        else:
+            serial_state = "STM32 NOT CONFIGURED"
+        self.connection_label.configure(text=serial_state)
         self.stats_label.configure(text=self.logger.summary_text().replace("  ", "\n"))
         if self.last_result is None:
             return

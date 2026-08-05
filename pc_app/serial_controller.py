@@ -9,15 +9,24 @@ class SerialController:
     def __init__(self, port: str = "", baudrate: int = 115200) -> None:
         self._serial: Optional[object] = None
         self.port = port
+        self.last_error = ""
         if port:
             self.connect(port, baudrate)
 
-    def connect(self, port: str, baudrate: int = 115200) -> None:
-        import serial
-
+    def connect(self, port: str, baudrate: int = 115200) -> bool:
+        """Connect without blocking the vision interface if COM is unavailable."""
         self.close()
-        self._serial = serial.Serial(port, baudrate=baudrate, timeout=0.3)
         self.port = port
+        self.last_error = ""
+        try:
+            import serial
+
+            self._serial = serial.Serial(port, baudrate=baudrate, timeout=0.3)
+        except Exception as error:  # Port may be absent, occupied, or changing.
+            self._serial = None
+            self.last_error = str(error)
+            return False
+        return True
 
     @property
     def connected(self) -> bool:
