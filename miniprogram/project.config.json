@@ -1,9 +1,38 @@
 {
   "description": "Embedded Machine Vision Defect Detection Mini Program",
-  "packOptions": { "ignore": [] },
-  "setting": { "urlCheck": false, "es6": true, "minified": false },
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "minified": false,
+    "postcss": false,
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "enhance": false,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
   "compileType": "miniprogram",
-  "cloudfunctionRoot": "cloudfunctions",
-  "appid": "touristappid",
-  "projectname": "vision-inspection-report"
+  "cloudfunctionRoot": "cloudfunctions/",
+  "appid": "wxb6345aae61e09fa8",
+  "projectname": "vision-inspection-report",
+  "simulatorPluginLibVersion": {},
+  "editorSetting": {}
 }
