@@ -8,6 +8,7 @@ venv/
 samples/captured/
 samples/raw/
 results/
+miniprogram/mock/runtime_reports.js
 *.avi
 *.mp4
 
