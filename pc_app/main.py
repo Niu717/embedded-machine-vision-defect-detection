@@ -24,7 +24,7 @@ RESULT_DIR = ROOT / "results"
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="工件缺陷检测上位机 - 第一版")
     parser.add_argument("--camera", type=int, default=1, help="摄像头编号，默认 1（外接工业摄像头）")
-    parser.add_argument("--port", default="", help="STM32 串口，例如 COM3")
+    parser.add_argument("--port", default="", help="STM32 串口，例如 COM10")
     return parser.parse_args()
 
 

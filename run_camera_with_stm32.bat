@@ -7,7 +7,7 @@ if not exist "%PYTHON_EXE%" (
   exit /b 1
 )
 
-set /p "STM32_PORT=Enter USB-TTL COM port (for example COM3): "
+set /p "STM32_PORT=Enter USB-TTL COM port (for example COM10): "
 if "%STM32_PORT%"=="" (
   echo No COM port entered.
   pause
