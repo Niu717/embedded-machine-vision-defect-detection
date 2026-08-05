@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import cv2
 import numpy as np
+from report_generator import build_session_report
 
 if TYPE_CHECKING:
     from cap_detector_v2 import DetectionResult
@@ -16,12 +17,13 @@ if TYPE_CHECKING:
 class ResultLogger:
     """Save one annotated image and one CSV row for each inspected workpiece."""
 
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, mode: str = "Bottle Cap") -> None:
         session_name = datetime.now().strftime("session_%Y%m%d_%H%M%S")
         self.session_dir = root / session_name
         self.image_dir = self.session_dir / "annotated"
         self.image_dir.mkdir(parents=True, exist_ok=True)
         self.csv_path = self.session_dir / "detections.csv"
+        self.mode = mode
         self.total_count = 0
         self.pass_count = 0
         self.fail_count = 0
@@ -29,7 +31,7 @@ class ResultLogger:
         with self.csv_path.open("w", newline="", encoding="utf-8-sig") as file:
             csv.writer(file).writerow([
                 "sequence", "timestamp", "verdict", "detection_message",
-                "serial_connected", "annotated_image",
+                "mode", "serial_connected", "annotated_image",
             ])
 
     def record(
@@ -56,10 +58,16 @@ class ResultLogger:
                 timestamp.strftime("%Y-%m-%d %H:%M:%S"),
                 verdict,
                 result.message,
+                self.mode,
                 "yes" if serial_connected else "no",
                 str(image_path.relative_to(self.session_dir)),
             ])
+        self.export_report()
         return image_path
+
+    def export_report(self) -> tuple[Path, Path]:
+        """Update report.json and report.html for desktop or mini-program sync."""
+        return build_session_report(self.session_dir, self.mode)
 
     @property
     def yield_rate(self) -> float:

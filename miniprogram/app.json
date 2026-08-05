@@ -1,0 +1,5 @@
+{
+  "pages": ["pages/dashboard/dashboard", "pages/reports/reports", "pages/report-detail/report-detail"],
+  "window": {"navigationBarTitleText": "检测报告中心", "navigationBarBackgroundColor": "#102a43", "navigationBarTextStyle": "white", "backgroundColor": "#f4f7fb"},
+  "tabBar": {"color": "#64748b", "selectedColor": "#0f766e", "backgroundColor": "#ffffff", "list": [{"pagePath": "pages/dashboard/dashboard", "text": "概览"}, {"pagePath": "pages/reports/reports", "text": "报告"}]}
+}

@@ -1,0 +1,6 @@
+page { background: #f4f7fb; color: #172033; font-family: Arial, "Microsoft YaHei", sans-serif; }
+.page { padding: 28rpx; }
+.card { background: #ffffff; border-radius: 20rpx; padding: 28rpx; margin-bottom: 22rpx; box-shadow: 0 8rpx 22rpx rgba(15, 42, 67, 0.07); }
+.section-title { font-size: 28rpx; font-weight: 700; margin: 8rpx 0 22rpx; color: #334155; }
+.muted { color: #64748b; font-size: 24rpx; }
+.pass { color: #15803d; }.fail { color: #dc2626; }

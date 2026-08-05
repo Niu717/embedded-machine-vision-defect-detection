@@ -1,0 +1,8 @@
+{
+  "description": "Embedded Machine Vision Defect Detection Mini Program",
+  "packOptions": { "ignore": [] },
+  "setting": { "urlCheck": false, "es6": true, "minified": false },
+  "compileType": "miniprogram",
+  "appid": "touristappid",
+  "projectname": "vision-inspection-report"
+}
