@@ -3,6 +3,7 @@
   "packOptions": { "ignore": [] },
   "setting": { "urlCheck": false, "es6": true, "minified": false },
   "compileType": "miniprogram",
+  "cloudfunctionRoot": "cloudfunctions",
   "appid": "touristappid",
   "projectname": "vision-inspection-report"
 }
