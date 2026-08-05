@@ -15,4 +15,12 @@ function getReport(id) {
   return listReports().then(reports => reports.find(item => item.id === id) || reports[0])
 }
 
-module.exports = { listReports, getReport }
+function seedLocalReports() {
+  if (!canUseCloud()) return Promise.reject(new Error('Cloud reports are disabled.'))
+  return Promise.all(localReports.map(report => wx.cloud.callFunction({
+    name: 'reportService',
+    data: { action: 'upsert', report },
+  }))).then(() => listReports())
+}
+
+module.exports = { listReports, getReport, seedLocalReports }
