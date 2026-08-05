@@ -93,8 +93,8 @@ class VisionDashboard:
 
         self.root = tk.Tk()
         self.root.title("嵌入式机器视觉缺陷检测系统")
-        self.root.geometry("1360x820")
-        self.root.minsize(1100, 720)
+        self.root.geometry("1600x900")
+        self.root.minsize(1300, 760)
         self.root.configure(bg="#0b1220")
         self._build_layout()
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -142,20 +142,38 @@ class VisionDashboard:
         tk.Button(toolbar, text="保存当前图像", command=self.save_frame, bg="#334155", fg="white", relief="flat", font=("Microsoft YaHei", 11), padx=14, pady=8).pack(side="left", padx=4)
         tk.Button(toolbar, text="导出检测报告", command=self.export_report, bg="#2563eb", fg="white", relief="flat", font=("Microsoft YaHei", 11, "bold"), padx=14, pady=8).pack(side="right")
 
-        panel = tk.Frame(body, bg="#102a43", width=290)
+        panel = tk.Frame(body, bg="#102a43", width=380)
         panel.pack(side="right", fill="y", padx=(14, 0))
         panel.pack_propagate(False)
         tk.Label(panel, text="最新检测结果", fg="#94a3b8", bg="#102a43", font=("Microsoft YaHei", 10, "bold")).pack(anchor="w", padx=20, pady=(24, 6))
         self.verdict_label = tk.Label(panel, text="等待检测", fg="#fbbf24", bg="#102a43", font=("Microsoft YaHei", 25, "bold"))
         self.verdict_label.pack(anchor="w", padx=20)
-        self.detail_label = tk.Label(panel, text="点击“开始检测”后开始识别", justify="left", wraplength=245, fg="#cbd5e1", bg="#102a43", font=("Microsoft YaHei", 10))
-        self.detail_label.pack(anchor="w", padx=20, pady=(8, 22))
+        self.detail_label = tk.Label(
+            panel,
+            text="点击“开始检测”后开始识别",
+            justify="left",
+            anchor="nw",
+            wraplength=330,
+            fg="#cbd5e1",
+            bg="#102a43",
+            font=("Microsoft YaHei", 10),
+        )
+        self.detail_label.pack(fill="x", padx=20, pady=(8, 22))
         tk.Frame(panel, bg="#1e3a5f", height=1).pack(fill="x", padx=20)
         tk.Label(panel, text="本次检测统计", fg="#94a3b8", bg="#102a43", font=("Microsoft YaHei", 10, "bold")).pack(anchor="w", padx=20, pady=(22, 6))
         self.stats_label = tk.Label(panel, text="检测总数：0\n合格：0\n不合格：0\n合格率：0.0%", justify="left", fg="#f8fafc", bg="#102a43", font=("Microsoft YaHei", 12))
         self.stats_label.pack(anchor="w", padx=20)
-        self.mode_label = tk.Label(panel, text="", justify="left", wraplength=245, fg="#93c5fd", bg="#102a43", font=("Microsoft YaHei", 9))
-        self.mode_label.pack(anchor="w", padx=20, pady=(26, 0))
+        self.mode_label = tk.Label(
+            panel,
+            text="",
+            justify="left",
+            anchor="nw",
+            wraplength=330,
+            fg="#93c5fd",
+            bg="#102a43",
+            font=("Microsoft YaHei", 9),
+        )
+        self.mode_label.pack(fill="x", padx=20, pady=(26, 0))
         self._refresh_mode_style()
 
     def _refresh_mode_style(self) -> None:
