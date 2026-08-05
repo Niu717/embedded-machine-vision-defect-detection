@@ -109,7 +109,7 @@ class VisionDashboard:
 
         body = tk.Frame(self.root, bg="#0b1220")
         body.pack(fill="both", expand=True, padx=18, pady=16)
-        sidebar = tk.Frame(body, bg="#102a43", width=190)
+        sidebar = tk.Frame(body, bg="#102a43", width=230)
         sidebar.pack(side="left", fill="y", padx=(0, 14))
         sidebar.pack_propagate(False)
         tk.Label(sidebar, text="检测模式", fg="#94a3b8", bg="#102a43", font=("Microsoft YaHei", 10, "bold")).pack(anchor="w", padx=18, pady=(22, 10))
@@ -119,7 +119,14 @@ class VisionDashboard:
             button.pack(fill="x", padx=10, pady=4, ipady=9)
             self.mode_buttons[mode] = button
         tk.Frame(sidebar, bg="#1e3a5f", height=1).pack(fill="x", padx=18, pady=18)
-        tk.Label(sidebar, text="系统流程\n摄像头 → OpenCV → STM32\nOLED / 蜂鸣器 / 舵机", justify="left", fg="#cbd5e1", bg="#102a43", font=("Microsoft YaHei", 10)).pack(anchor="w", padx=18)
+        tk.Label(
+            sidebar,
+            text="系统流程\n摄像头\n↓\nOpenCV 图像检测\n↓\nSTM32 控制\n↓\nOLED / 蜂鸣器 / 舵机",
+            justify="left",
+            fg="#cbd5e1",
+            bg="#102a43",
+            font=("Microsoft YaHei", 10),
+        ).pack(anchor="w", padx=18)
 
         center = tk.Frame(body, bg="#111827")
         center.pack(side="left", fill="both", expand=True)
@@ -273,9 +280,15 @@ class VisionDashboard:
         if result.defect_area > 0:
             frame[result.defect_mask > 0] = (0, 0, 255)
         cv2.putText(frame, result.message, (25, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 3)
-        verdict = "合格" if result.passed else "不合格"
-        self.verdict_label.configure(text=verdict, fg="#4ade80" if result.passed else "#fb7185")
-        state = "检测结果已发送，请移走当前工件后继续。" if not self.inspection_armed else "请放入下一个工件。"
+        if result.message in {"NO CAP", "CAP TOO SMALL"}:
+            verdict = "等待工件"
+            verdict_color = "#fbbf24"
+            state = "请将瓶盖放在黑色检测区中央，并保持镜头与光照位置不变。"
+        else:
+            verdict = "合格" if result.passed else "不合格"
+            verdict_color = "#4ade80" if result.passed else "#fb7185"
+            state = "检测结果已发送，请移走当前工件后继续。" if not self.inspection_armed else "请放入下一个工件。"
+        self.verdict_label.configure(text=verdict, fg=verdict_color)
         self.detail_label.configure(text=f"{chinese_result(result.message)}\n{state}")
 
     def close(self) -> None:
