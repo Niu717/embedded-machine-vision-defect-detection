@@ -8,6 +8,86 @@ from datetime import datetime
 from pathlib import Path
 
 
+def build_pdf_report(session_dir: Path, summary: dict[str, object]) -> Path | None:
+    """Write a compact printable report. Returns None only if PDF support is absent."""
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    except ImportError:
+        return None
+
+    pdf_path = session_dir / "report.pdf"
+    document = SimpleDocTemplate(
+        str(pdf_path), pagesize=A4,
+        rightMargin=16 * mm, leftMargin=16 * mm,
+        topMargin=15 * mm, bottomMargin=15 * mm,
+    )
+    styles = getSampleStyleSheet()
+    body = styles["BodyText"]
+    body.leading = 15
+    title = styles["Title"]
+    story = [
+        Paragraph("Machine Vision Inspection Report", title),
+        Spacer(1, 4 * mm),
+        Paragraph(
+            f"Report ID: {html.escape(str(summary['report_id']))}<br/>"
+            f"Mode: {html.escape(str(summary['mode']))}<br/>"
+            f"Inspected at: {html.escape(str(summary['inspected_at'] or 'No records yet'))}<br/>"
+            f"Generated at: {html.escape(str(summary['generated_at']))}",
+            body,
+        ),
+        Spacer(1, 5 * mm),
+    ]
+    overview = [
+        ["Total", "PASS", "FAIL", "Yield"],
+        [str(summary["total"]), str(summary["passed"]), str(summary["failed"]), f"{summary['yield_rate']}%"],
+    ]
+    overview_table = Table(overview, colWidths=[42 * mm] * 4)
+    overview_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#102a43")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cbd5e1")),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    story.extend([overview_table, Spacer(1, 5 * mm)])
+
+    breakdown = summary.get("failure_breakdown", {})
+    breakdown_text = ", ".join(f"{key}: {value}" for key, value in breakdown.items()) or "None"
+    story.extend([Paragraph(f"Failure breakdown: {html.escape(breakdown_text)}", body), Spacer(1, 4 * mm)])
+
+    rows = [["No.", "Time", "Verdict", "Result"]]
+    for record in summary.get("records", []):
+        rows.append([
+            str(record.get("sequence", "")),
+            str(record.get("timestamp", "")),
+            str(record.get("verdict", "")),
+            str(record.get("detection_message", "")),
+        ])
+    if len(rows) == 1:
+        rows.append(["-", "-", "-", "No inspection records yet"])
+    records_table = Table(rows, colWidths=[14 * mm, 42 * mm, 24 * mm, 88 * mm], repeatRows=1)
+    records_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a5f")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#cbd5e1")),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    story.append(records_table)
+    document.build(story)
+    return pdf_path
+
+
 def build_session_report(session_dir: Path, mode: str) -> tuple[Path, Path]:
     """Create portable JSON and HTML reports from one inspection session."""
     csv_path = session_dir / "detections.csv"
@@ -58,6 +138,7 @@ def build_session_report(session_dir: Path, mode: str) -> tuple[Path, Path]:
 <p><b>Failure breakdown:</b> {html.escape(failures_text)}</p><table><thead><tr><th>No.</th><th>Time</th><th>Verdict</th><th>Result</th><th>Annotated image</th></tr></thead><tbody>{rows}</tbody></table></body></html>""",
         encoding="utf-8",
     )
+    build_pdf_report(session_dir, summary)
     sync_mini_program_reports(session_dir.parents[1])
     return json_path, html_path
 

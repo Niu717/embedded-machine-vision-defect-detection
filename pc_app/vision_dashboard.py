@@ -186,7 +186,9 @@ class VisionDashboard:
 
     def export_report(self) -> None:
         json_path, html_path = self.logger.export_report()
-        messagebox.showinfo("Report exported", f"JSON: {json_path.name}\nHTML: {html_path.name}\nFolder: {self.logger.session_dir}")
+        pdf_path = self.logger.session_dir / "report.pdf"
+        pdf_text = f"\nPDF: {pdf_path.name}" if pdf_path.exists() else ""
+        messagebox.showinfo("Report exported", f"JSON: {json_path.name}\nHTML: {html_path.name}{pdf_text}\nFolder: {self.logger.session_dir}")
 
     def _record_result(self, result, frame) -> None:
         self.serial.send_result(result.passed)

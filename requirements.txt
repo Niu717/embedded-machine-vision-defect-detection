@@ -2,3 +2,4 @@ opencv-python>=4.10
 numpy>=1.26
 pyserial>=3.5
 Pillow>=10.0
+reportlab>=4.0
