@@ -7,7 +7,10 @@ function canUseCloud() {
 function listReports() {
   if (!canUseCloud()) return Promise.resolve(localReports)
   return wx.cloud.callFunction({ name: 'reportService', data: { action: 'list' } })
-    .then(response => response.result.reports || localReports)
+    .then(response => {
+      const reports = response.result.reports || []
+      return reports.length ? reports : localReports
+    })
     .catch(() => localReports)
 }
 
