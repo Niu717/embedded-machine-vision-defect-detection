@@ -12,17 +12,19 @@ from PIL import Image, ImageTk
 from cap_detector_v2 import CapDefectDetector
 from config import AppConfig
 from result_logger import ResultLogger
+from reference_detector import ReferenceComparisonDetector
 from serial_controller import SerialController
 
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULT_DIR = ROOT / "results"
 CAPTURE_DIR = ROOT / "samples" / "captured"
+CALIBRATION_DIR = ROOT / "calibration"
 
 MODE_INFO = {
     "Bottle Cap": "Production mode: edge, deformation, dark spot and scratch inspection.",
-    "Metal Part": "Calibration mode: save a standard reference image before comparing metal parts.",
-    "PCB Board": "Calibration mode: compare visible board layout and surface condition with a standard image.",
+    "Metal Part": "Reference-comparison mode: save a standard image after fixing the workpiece and light.",
+    "PCB Board": "Reference-comparison mode: detects visible layout and surface differences, not microscopic solder defects.",
 }
 
 
@@ -56,6 +58,10 @@ class VisionDashboard:
 
         self.mode = "Bottle Cap"
         self.logger = ResultLogger(RESULT_DIR, self.mode)
+        self.reference_detectors = {
+            "Metal Part": ReferenceComparisonDetector(CALIBRATION_DIR, "metal_part"),
+            "PCB Board": ReferenceComparisonDetector(CALIBRATION_DIR, "pcb_board"),
+        }
         self.detecting = False
         self.inspection_armed = True
         self.history = deque(maxlen=12)
@@ -100,6 +106,8 @@ class VisionDashboard:
         toolbar.pack(fill="x", padx=14, pady=12)
         self.detect_button = tk.Button(toolbar, text="Start inspection", command=self.toggle_detection, bg="#0f766e", fg="white", relief="flat", font=("Arial", 11, "bold"), padx=16, pady=8)
         self.detect_button.pack(side="left", padx=(0, 8))
+        self.reference_button = tk.Button(toolbar, text="Save standard image", command=self.save_reference, bg="#7c3aed", fg="white", relief="flat", font=("Arial", 11, "bold"), padx=14, pady=8)
+        self.reference_button.pack(side="left", padx=4)
         tk.Button(toolbar, text="Re-arm", command=self.rearm, bg="#334155", fg="white", relief="flat", font=("Arial", 11), padx=14, pady=8).pack(side="left", padx=4)
         tk.Button(toolbar, text="Save frame", command=self.save_frame, bg="#334155", fg="white", relief="flat", font=("Arial", 11), padx=14, pady=8).pack(side="left", padx=4)
         tk.Button(toolbar, text="Export report", command=self.export_report, bg="#2563eb", fg="white", relief="flat", font=("Arial", 11, "bold"), padx=14, pady=8).pack(side="right")
@@ -125,6 +133,8 @@ class VisionDashboard:
             active = name == self.mode
             button.configure(bg="#0f766e" if active else "#102a43", fg="#ffffff" if active else "#cbd5e1", activebackground="#0f766e" if active else "#1e3a5f")
         self.mode_label.configure(text=MODE_INFO[self.mode])
+        reference_needed = self.mode != "Bottle Cap"
+        self.reference_button.configure(state="normal" if reference_needed else "disabled")
 
     def switch_mode(self, mode: str) -> None:
         if mode == self.mode:
@@ -141,8 +151,8 @@ class VisionDashboard:
         self._refresh_mode_style()
 
     def toggle_detection(self) -> None:
-        if self.mode != "Bottle Cap":
-            messagebox.showinfo("Calibration mode", "This mode UI is ready. Capture a standard reference image after you prepare metal or PCB samples; its comparison detector will be added in the next step.")
+        if self.mode != "Bottle Cap" and not self.reference_detectors[self.mode].ready:
+            messagebox.showinfo("Reference required", "Please place a qualified standard workpiece in the fixed position, then click Save standard image.")
             return
         self.detecting = not self.detecting
         self.history.clear()
@@ -150,6 +160,16 @@ class VisionDashboard:
         self.inspection_armed = True
         self.detect_button.configure(text="Pause inspection" if self.detecting else "Start inspection")
         self.detail_label.configure(text="Waiting for stable camera result..." if self.detecting else "Inspection paused")
+
+    def save_reference(self) -> None:
+        if self.mode == "Bottle Cap":
+            return
+        if self.last_frame is None:
+            messagebox.showwarning("Camera", "No camera frame is available yet.")
+            return
+        path = self.reference_detectors[self.mode].save_reference(self.last_frame)
+        self.detail_label.configure(text=f"Standard image saved: {path.name}")
+        self.verdict_label.configure(text="CALIBRATED", fg="#4ade80")
 
     def rearm(self) -> None:
         self.history.clear()
@@ -186,7 +206,7 @@ class VisionDashboard:
             self.last_frame = frame
             display = frame.copy()
             if self.detecting:
-                raw_result = self.detector.detect(frame)
+                raw_result = self.detector.detect(frame) if self.mode == "Bottle Cap" else self.reference_detectors[self.mode].detect(frame)
                 self.history.append(raw_result)
                 candidate = stable_result_from(self.history)
                 if candidate is not None:
